@@ -4,13 +4,13 @@ import random
 # yeild is new to me, read about it
 
 class KFold:
-    def _init_(self,k_split = 5,shuffle = False):
+    def __init__(self,k_split = 5,shuffle = False):
+        self.k_split = k_split
+        self.shuffle = shuffle
         if not isinstance(self.k_split, int) or self.k_split <= 1:
             raise ValueError("k_split must be an integer greater than 1.")
         if not isinstance(self.shuffle, bool):
             raise TypeError("shuffle must be a boolean value.")
-        self.k_split = k_split
-        self.shuffle = shuffle
 
     def split(self,X):
         n_samples = X.shape[0]
