@@ -1,1 +1,1 @@
-__all__ = ["datasets","linear_models","preprocessing"]
+__all__ = ["datasets","linear_models","preprocessing","trees"]
