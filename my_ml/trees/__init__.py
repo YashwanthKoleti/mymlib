@@ -1,4 +1,4 @@
 from ._decision_tree import DecisionTree_Classification, DecisionTree_Regression
-from ._random_forest import RandomForestClassification
+from ._random_forest import RandomForestClassification,RandomForestRegression
 
-__all__ = ["DecisionTree_Classification","DecisionTree_Regression","RandomForestClassification"]
+__all__ = ["DecisionTree_Classification","DecisionTree_Regression","RandomForestClassification","RandomForestRegression"]
