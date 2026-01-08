@@ -1,14 +1,50 @@
 import numpy as np
 from queue import Queue
 
-def gini(y,classes):
-    ans = 1
-    for c in classes:
-        ans = ans - ((np.sum(y == c))/len(y))**2
 
-    return ans
+class CondiNode:
+    def __init__(self):
+        self.feature = None
+        self.threshold = None
+        self.is_binary = False
+        self.left = None
+        self.right = None
+        self.value = None
+        
+    def __repr__(self):
+        return (
+            f"CondiNode("
+            f"feature={self.feature}, "
+            f"threshold={self.threshold}, "
+            f"is_binary={self.is_binary}, "
+            f"is_leaf={self.is_leaf}, "
+            f"value={self.value})"
+        )
+    
+def gini(y):
+    _, counts = np.unique(y, return_counts=True)
+    p = counts / counts.sum()
+    return 1 - np.sum(p ** 2)
 
-class DecisionTree:
+def entropy(y):
+    _, counts = np.unique(y, return_counts=True)
+    p = counts / counts.sum()
+    return -np.sum(p * np.log2(p + 1e-9))
+
+def misclass_err(y):
+    _, counts = np.unique(y, return_counts=True)
+    p = counts / counts.sum()
+    return 1 - np.max(p)
+
+def impurity(y,kind = 'gini'):
+    if kind == 'gini':
+        return gini(y)
+    if kind == 'entropy':
+        return entropy(y)
+    
+    return misclass_err(y)
+
+class DecisionTree_Classification:
     def __init__(self,max_depth,min_samples_split,min_samples_leaf,threshold,criterion = 'gini'):
         self.threshold = threshold
         self.features = None
@@ -18,9 +54,10 @@ class DecisionTree:
         self.criterion = criterion
         self.binary_column = None
         self.classes = None
+        self.condition = None
     
-    def check(self,X):
-        if self.max_depth <= 0:
+    def check(self,X,depth):
+        if self.max_depth < depth:
             #print('False1')
             return False
         if self.min_samples_split is not None:
@@ -42,29 +79,41 @@ class DecisionTree:
         ))
 
         leafs = []
+        condition = CondiNode()
         q = Queue()
-        q.put(indices)
+        values, counts = np.unique(y, return_counts=True)
+        most_repeated = values[np.argmax(counts)]
+        condition.value = most_repeated
+        q.put((1,condition,indices,most_repeated))
         while not q.empty():
-            indices_dummy = q.get()
-            if self.check(indices_dummy):
+            depth , condition_dummy,indices_dummy,value = q.get()
+
+            if depth >= self.max_depth:
+                leafs.append((depth , condition_dummy,indices_dummy,value))
+                continue
+            if self.check(indices_dummy,depth):
                 maxi = 0
                 splits = [None,None]
-                gi = gini(y[indices_dummy],self.classes)
+                impurity_parent = impurity(y[indices_dummy],self.criterion)
                 for i in range(self.features):
                     if self.binary_column[i]:
-                        indices_left = indices_dummy[X[indices_dummy,i] == 1]
-                        indices_right = indices_dummy[X[indices_dummy,i] == 0]
+                        indices_left = indices_dummy[X[indices_dummy,i] == 0]
+                        indices_right = indices_dummy[X[indices_dummy,i] == 1]
 
                         if len(indices_left) < self.min_samples_leaf or len(indices_right) < self.min_samples_leaf:
                             continue
 
-                        gi_left = gini(y[indices_left],self.classes)
-                        gi_right = gini(y[indices_right],self.classes)
-                        gi_increase = gi - ((len(indices_left)*gi_left) + (len(indices_right)*gi_right))/len(indices)
-                        if gi_increase< self.threshold:
+                        impurity_left = impurity(y[indices_left],self.criterion)
+                        impurity_right = impurity(y[indices_right],self.criterion)
+                        impurity_change = impurity_parent - ((len(indices_left)*impurity_left) + (len(indices_right)*impurity_right))/len(indices)
+                        if impurity_change< self.threshold:
                             continue
-                        if gi_increase > maxi :
-                            maxi = gi_increase
+                        if impurity_change > maxi and depth + 1 <= self.max_depth:
+                            condition_dummy.feature = i
+                            condition_dummy.threshold = 0.5
+                            condition_dummy.is_binary = True
+
+                            maxi = impurity_change
                             splits = [indices_left,indices_right]
                     else:
                             thresholds_dummy = np.sort(np.unique(X[indices_dummy, i]))
@@ -76,19 +125,58 @@ class DecisionTree:
                                 if len(indices_left) < self.min_samples_leaf or len(indices_right) < self.min_samples_leaf:
                                     continue
                                 else:
-                                    gi_left = gini(y[indices_left],self.classes)
-                                    gi_right = gini(y[indices_right],self.classes)
-                                    gi_increase = gi - ((len(indices_left)*gi_left) + (len(indices_right)*gi_right))/len(indices_dummy)
-                                    if gi_increase< self.threshold:
+                                    impurity_left = impurity(y[indices_left],self.criterion)
+                                    impurity_right = impurity(y[indices_right],self.criterion)
+                                    impurity_change = impurity_parent - ((len(indices_left)*impurity_left) + (len(indices_right)*impurity_right))/len(indices_dummy)
+                                    if impurity_change< self.threshold:
                                         continue
-                                    if gi_increase > maxi :
-                                            maxi = gi_increase
+                                    if impurity_change > maxi and depth + 1 <= self.max_depth:
+                                            condition_dummy.feature = i
+                                            condition_dummy.threshold = mid
+                                            condition_dummy.is_binary = False
+                                            maxi = impurity_change
                                             splits = [indices_left,indices_right]
+                                            
                 if splits[0] is not None and splits[1] is not None:
-                    leafs.append(splits[0])
-                    leafs.append(splits[1])
+                    condition_dummy.left = CondiNode()
+                    condition_dummy.right = CondiNode()
+
+                    values, counts = np.unique(y[indices_left], return_counts=True)
+                    most_repeated = values[np.argmax(counts)]
+                    condition_dummy.left.value = most_repeated
+                    q.put((depth+1, condition_dummy.left, splits[0],most_repeated))
+
+                    values, counts = np.unique(y[indices_right], return_counts=True)
+                    most_repeated = values[np.argmax(counts)]
+                    q.put((depth+1, condition_dummy.right, splits[1],most_repeated))
+                    condition_dummy.right.value = most_repeated
                         
             else:
-                leafs.append(indices_dummy)
-        
+                leafs.append((condition_dummy,indices_dummy,value))
+        self.condition = condition
         return leafs
+    
+    def _predict(self, x, node=None):
+        if node is None:
+            node = self.condition  
+
+        if node.left == None:
+            return node.value
+
+
+        if node.is_binary:
+            if x[node.feature] == 1:
+                return self._predict(x, node.left)
+            else:
+                return self._predict(x, node.right)
+
+
+        if x[node.feature] <= node.threshold:
+            return self._predict(x, node.left)
+        else:
+            return self._predict(x, node.right)
+
+    def predict(self, X):
+        return np.array([self._predict(x) for x in X])
+
+

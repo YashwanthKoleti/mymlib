@@ -1,3 +1,3 @@
-from ._decision_tree import DecisionTree
+from ._decision_tree import DecisionTree_Classification
 
-__all__ = ["DecisionTree"]
+__all__ = ["DecisionTree_Classification"]
