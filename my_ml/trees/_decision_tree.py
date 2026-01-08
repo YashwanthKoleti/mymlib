@@ -46,7 +46,7 @@ def impurity(y,kind = 'gini'):
         raise RuntimeError('Choose a valid error/purity type')
 
 class DecisionTree_Classification:
-    def __init__(self,max_depth,min_samples_split,min_samples_leaf,threshold,criterion = 'gini'):
+    def __init__(self,max_depth,min_samples_split,min_samples_leaf,threshold,forest = False,criterion = 'gini'):
         self.threshold = threshold
         self.features = None
         self.max_depth = max_depth
@@ -56,6 +56,7 @@ class DecisionTree_Classification:
         self.binary_column = None
         self.classes = None
         self.condition = None
+        self.forest = forest
     
     def check(self,X,depth):
         if self.max_depth < depth:
@@ -69,7 +70,10 @@ class DecisionTree_Classification:
         return True
 
     def fit(self,X,y):
-        self.features = X.shape[1]
+        if not self.forest:
+            self.features = np.arange(X.shape[1])
+        else:
+            self.features = np.random.randint(0,X.shape[1],size = int(np.sqrt(X.shape[1])))
         self.classes = np.unique(y)
         indices = np.arange(X.shape[0])
     
@@ -96,7 +100,7 @@ class DecisionTree_Classification:
                 maxi = 0
                 splits = [None,None]
                 impurity_parent = impurity(y[indices_dummy],self.criterion)
-                for i in range(self.features):
+                for i in self.features:
                     if self.binary_column[i]:
                         indices_left = indices_dummy[X[indices_dummy,i] == 0]
                         indices_right = indices_dummy[X[indices_dummy,i] == 1]
