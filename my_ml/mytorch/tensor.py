@@ -15,26 +15,33 @@ class tensor:
         self.shape = self.data.shape
         self.grad = np.zeros(self.shape)
         self.requires_grad = True
-        self.parents = parents
+        self.parents = parents if parents is not None else []
         self.op = operation
         self._backward = lambda : 0
         
     @staticmethod
     def broadcast(arr,shape):
         return np.broadcast_to(arr, shape)
+    
     @staticmethod
-    def un_broadcast(arr, original_shape):
-        extra_dims = arr.ndim - len(original_shape)
-        for _ in range(extra_dims):
-            arr = arr.sum(axis=0, keepdims=False)
+    def un_broadcast(arr, shape):
+        if arr.shape == shape:
+            return arr
+    # Reduce extra dimensions
+        while arr.ndim > len(shape):
+            arr = arr.sum(axis=0)
 
-        for axis, size in enumerate(original_shape):
-            if size == 1:
-                arr = arr.sum(axis=axis, keepdims=True)
+    # Sum along broadcasted axes
+        for i, (gdim, sdim) in enumerate(zip(arr.shape, shape)):
+            if sdim == 1:
+                arr = arr.sum(axis=i, keepdims=True)
 
-        return arr.reshape(original_shape)
+        return arr.reshape(shape)
+
 
     def __add__(self,other):
+        other = other if isinstance(other,tensor) else tensor(other)
+
         new_tensor = tensor(self.data+other.data,parents=[self,other],operation='+')
         def _backward():
             self.grad += self.un_broadcast(new_tensor.grad,(self.shape))
@@ -44,6 +51,8 @@ class tensor:
         return new_tensor
     
     def __mul__(self,other):
+        other = other if isinstance(other,tensor) else tensor(other)
+
         new_tensor = tensor(self.data*other.data,parents=[self,other],operation='*')
         def _backward():
             self.grad += self.un_broadcast(other.data*new_tensor.grad,(self.shape))
@@ -53,6 +62,7 @@ class tensor:
         return new_tensor 
 
     def __matmul__(self,other):
+        other = other if isinstance(other,tensor) else tensor(other)
         data = self.data @ other.data
         new_tensor = tensor(data, parents=[self, other], operation='matmul')
         def _backward():
@@ -62,10 +72,25 @@ class tensor:
         new_tensor._backward = _backward
         return new_tensor
     
+    def __radd__(self, other):
+        return self + other
+
+    def __rmul__(self, other):
+        return self * other
+
+    def __neg__(self):
+        return self * -1
+
+    def __sub__(self, other):
+        return self + (-other)
+
+    def __rsub__(self, other):
+        return other + (-self)
+
     def relu(self):
         new_tensor = tensor(np.maximum(0,self.data),parents=[self],operation = 'relu')
         def _backward():
-            self.grad += new_tensor.grad * (new_tensor.data > 0)
+            self.grad += new_tensor.grad * (self.data > 0)
             
         new_tensor._backward = _backward
         return new_tensor
@@ -73,20 +98,11 @@ class tensor:
     def sigmoid(self):
         new_tensor = tensor(1/(1+np.exp(-self.data)),parents=[self],operation='sigmoid')
         def _backward():
-            dummy = np.exp(-self.data)
-            self.grad += new_tensor.grad * ((dummy)/((1+dummy)**2))
+            sig = new_tensor.data
+            self.grad += new_tensor.grad * sig * (1 - sig)
+
         new_tensor._backward = _backward
         return new_tensor
-
-    def topological_sort(self,visited = None):
-        if visited == None:
-            visited = set()
-        while self not in visited:
-            visited.add(self)
-            for parent in self.parents:
-                self.topological_sort(parent,visited=visited)
-        
-        return visited
 
     def __repr__(self):
         def indent(value, spaces=4):
@@ -101,12 +117,26 @@ class tensor:
         ")"
         )
 
+    def topological_sort(self):
+        visited = set()
+        order = []
+
+        def build(v):
+            if v is None:
+                return
+            if v not in visited:
+                visited.add(v)
+                for parent in v.parents:
+                    build(parent)
+                order.append(v)
+
+        build(self)
+        return order
 
 
     def backward(self):
-        nodes = []
-        nodes.append(self)
+        self.grad = np.ones_like(self.data)
+        topo = self.topological_sort()
 
-        topo = self.topological_sort(self)
         for v in reversed(topo):
-            v._backward()
+            v._backward()    
