@@ -29,4 +29,9 @@ def backward(v):
 
         gradiendts = node.grad_fn.backward(node.grad)
         for i,(parent_node,parent_grad) in enumerate(zip(node.parents,gradiendts)):
-            parent_node.grad += parent_grad
+            if parent_node.grad is None:
+                parent_node.grad = parent_grad
+            else:
+                parent_node.grad += parent_grad
+    
+    print(topo)

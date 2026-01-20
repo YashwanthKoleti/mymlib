@@ -2,7 +2,7 @@ import numpy as np
 from ..autograd.ops import AddOp,MulOp,MatMulOp,ReLUOp,SigmoidOp
 
 class tensor:
-    def __init__(self,data,parents = None,grad_fn = None):
+    def __init__(self,data,parents = None,grad_fn = None,required_grad = True):
         if not isinstance(data, np.ndarray):
             try:
                 self.data = np.array(data, dtype=np.float64)
@@ -15,7 +15,7 @@ class tensor:
 
         self.shape = self.data.shape
         self.grad = np.zeros(self.shape)
-        self.requires_grad = True
+        self.requires_grad = required_grad
         self.parents = parents if parents is not None else []
         self.grad_fn = grad_fn
         

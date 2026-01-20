@@ -26,7 +26,8 @@ class AddOp(Op):
 
     def backward(self, grad_output):
         #apply un-broadcasting and reply
-        return (un_broadcast(grad_output,self.saved_tensors[0].shape), un_broadcast(grad_output,self.saved_tensors[1].shape))
+        a, b = self.saved_tensors
+        return (un_broadcast(grad_output,a.shape), un_broadcast(grad_output,b.shape))
 
 
 class MulOp(Op):
@@ -39,7 +40,7 @@ class MulOp(Op):
         grad_a = grad_output * b
         grad_b = grad_output * a
         #apply un-broadcasting and reply
-        return (un_broadcast(grad_a,self.saved_tensors[0].shape), un_broadcast(grad_b,self.saved_tensors[1].shape))
+        return (un_broadcast(grad_a,a.shape), un_broadcast(grad_b,b.shape))
 
 
 class MatMulOp(Op):
@@ -49,10 +50,21 @@ class MatMulOp(Op):
 
     def backward(self, grad_output):
         a, b = self.saved_tensors
-        grad_a = grad_output @ b.T
-        grad_b = a.T @ grad_output
+        a_data = np.asarray(a.data)
+        b_data = np.asarray(b.data)
+        g_data = np.asarray(grad_output)
+
+        if a_data.ndim == 1:
+            a_data = a_data[None, :]
+
+        if g_data.ndim == 1:
+            g_data = g_data[None, :]
+
+        grad_a = g_data @ b.T
+        grad_b = a_data.T @ g_data
         #apply un-broadcasting and reply
-        return (un_broadcast(grad_a,self.saved_tensors[0].shape), un_broadcast(grad_b,self.saved_tensors[1].shape))
+
+        return (un_broadcast(grad_a,a.shape), un_broadcast(grad_b,b.shape))
     
 class ReLUOp(Op):
     def forward(self, a):
