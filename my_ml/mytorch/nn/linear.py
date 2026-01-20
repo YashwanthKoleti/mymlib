@@ -4,6 +4,8 @@ from .module import Module
 
 class Linear(Module):
     def __init__(self,input_dim,output_dim,bias = True):
+        super().__init__()
+
         self.weights = tensor(np.ones((input_dim,output_dim)))
         if bias:
             self.bias = tensor(np.ones(output_dim))
@@ -19,6 +21,9 @@ class Linear(Module):
 
         return x@self.weights + self.bias
     
+    def parameters(self):
+        return super().parameters()
+
     def __repr__(self):
         return f"Linear(in_features={self.weights.data.shape[0]}, " \
            f"out_features={self.weights.data.shape[1]}, " \

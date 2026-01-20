@@ -10,7 +10,6 @@ class Loss:
     def backward(self):
         raise NotImplementedError
     
-
 class MSE(Loss):
 
     def forward(self,y_true,y_pred):

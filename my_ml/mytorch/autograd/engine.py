@@ -26,6 +26,8 @@ def backward(v):
     for node in reversed(topo):
         if node.grad_fn is None:
             continue
+        if node.required_grad == False:
+            continue
 
         gradiendts = node.grad_fn.backward(node.grad)
         for i,(parent_node,parent_grad) in enumerate(zip(node.parents,gradiendts)):
@@ -33,5 +35,3 @@ def backward(v):
                 parent_node.grad = parent_grad
             else:
                 parent_node.grad += parent_grad
-    
-    print(topo)

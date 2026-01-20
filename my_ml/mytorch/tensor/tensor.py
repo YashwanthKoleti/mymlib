@@ -15,7 +15,7 @@ class tensor:
 
         self.shape = self.data.shape
         self.grad = np.zeros(self.shape)
-        self.requires_grad = required_grad
+        self.required_grad = required_grad
         self.parents = parents if parents is not None else []
         self.grad_fn = grad_fn
         
