@@ -6,8 +6,8 @@ def broadcast(arr,shape):
         return np.broadcast_to(arr, shape)
     
 def un_broadcast(arr, shape):
-        if arr.shape == shape:
-            return arr
+        if np.isscalar(arr) or arr.shape == () :
+            return np.ones_like(shape)*arr
     # Reduce extra dimensions
         while arr.ndim > len(shape):
             arr = arr.sum(axis=0)
@@ -88,3 +88,32 @@ class SigmoidOp(Op):
         (sig,) = self.saved_tensors
         grad_a = grad_output * sig * (1 - sig)
         return (grad_a,)
+
+class PowerOp(Op):
+    def forward(self,a):
+        self.saved_tensor = a
+        return a*a
+    
+    def backward(self,grad_output):
+        a = self.saved_tensor
+
+        return (2*a*grad_output,)
+    
+class MeanOp(Op):
+    def forward(self,a):
+        self.saved_tensor = a
+        out_data = np.mean(a)
+        return out_data
+    
+    def backward(self, grad_output):
+        a = self.saved_tensor
+        return un_broadcast(grad_output/4,a.shape)
+    
+class SumOp(Op):
+    def forward(self, a):
+        self.saved_tensor = a
+        return np.sum(a)
+    
+    def backward(self, grad_output):
+        a = self.saved_tensor
+        return un_broadcast(grad_output,a.shape)

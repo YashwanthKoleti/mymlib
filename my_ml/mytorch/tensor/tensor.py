@@ -1,5 +1,5 @@
 import numpy as np
-from ..autograd.ops import AddOp,MulOp,MatMulOp,ReLUOp,SigmoidOp
+from ..autograd.ops import AddOp,MulOp,MatMulOp,ReLUOp,SigmoidOp,PowerOp,SumOp,MeanOp
 
 class tensor:
     def __init__(self,data,parents = None,grad_fn = None,required_grad = True):
@@ -65,12 +65,27 @@ class tensor:
 
     def __rsub__(self, other):
         return other + (-self)
+    
+    def __truediv__(self, other):
+        return self * (other**-1)
+
+    def __rtruediv__(self, other):
+        return other * (self**-1)
 
     def relu(self):
         return ReLUOp().apply(self)
 
     def sigmoid(self):
         return SigmoidOp().apply(self)
+
+    def power(self):
+        return PowerOp().apply(self)
+    
+    def mean(self):
+        return MeanOp().apply(self)
+
+    def sum(self):
+        return SumOp().apply(self)
 
     def __repr__(self):
         def indent(value, spaces=4):

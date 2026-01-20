@@ -9,6 +9,3 @@ class Module:
 
     def __call__(self, x):
         return self.forward(x)
-    
-    def backward(self):
-        raise NotImplementedError
