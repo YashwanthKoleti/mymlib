@@ -1,3 +1,3 @@
-from .tensor import tensor
+from .tensor.tensor import tensor
 
-__all__ = ["tensor"]
+__all__ = ["tensor","autograd"]

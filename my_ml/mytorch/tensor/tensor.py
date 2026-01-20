@@ -1,7 +1,8 @@
 import numpy as np
+from ..autograd.ops import AddOp,MulOp,MatMulOp,ReLUOp,SigmoidOp
 
 class tensor:
-    def __init__(self,data,parents = None,operation = None):
+    def __init__(self,data,parents = None,grad_fn = None):
         if not isinstance(data, np.ndarray):
             try:
                 self.data = np.array(data, dtype=np.float64)
@@ -16,8 +17,7 @@ class tensor:
         self.grad = np.zeros(self.shape)
         self.requires_grad = True
         self.parents = parents if parents is not None else []
-        self.op = operation
-        self._backward = lambda : 0
+        self.grad_fn = grad_fn
         
     @staticmethod
     def broadcast(arr,shape):
@@ -41,36 +41,15 @@ class tensor:
 
     def __add__(self,other):
         other = other if isinstance(other,tensor) else tensor(other)
-
-        new_tensor = tensor(self.data+other.data,parents=[self,other],operation='+')
-        def _backward():
-            self.grad += self.un_broadcast(new_tensor.grad,(self.shape))
-            other.grad += self.un_broadcast(new_tensor.grad,(other.shape))
-
-        new_tensor._backward = _backward
-        return new_tensor
-    
+        return AddOp().apply(self,other)
+        
     def __mul__(self,other):
         other = other if isinstance(other,tensor) else tensor(other)
-
-        new_tensor = tensor(self.data*other.data,parents=[self,other],operation='*')
-        def _backward():
-            self.grad += self.un_broadcast(other.data*new_tensor.grad,(self.shape))
-            other.grad += self.un_broadcast(self.data*new_tensor.grad,(other.shape))
-
-        new_tensor._backward = _backward
-        return new_tensor 
+        return MulOp().apply(self,other)
 
     def __matmul__(self,other):
         other = other if isinstance(other,tensor) else tensor(other)
-        data = self.data @ other.data
-        new_tensor = tensor(data, parents=[self, other], operation='matmul')
-        def _backward():
-            self.grad += self.un_broadcast(new_tensor.grad @ other.data.T,(self.shape))
-            other.grad += self.un_broadcast(self.data.T @ new_tensor.grad,(other.shape))
-
-        new_tensor._backward = _backward
-        return new_tensor
+        return MatMulOp().apply(self,other)
     
     def __radd__(self, other):
         return self + other
@@ -88,21 +67,10 @@ class tensor:
         return other + (-self)
 
     def relu(self):
-        new_tensor = tensor(np.maximum(0,self.data),parents=[self],operation = 'relu')
-        def _backward():
-            self.grad += new_tensor.grad * (self.data > 0)
-            
-        new_tensor._backward = _backward
-        return new_tensor
+        return ReLUOp().apply(self)
 
     def sigmoid(self):
-        new_tensor = tensor(1/(1+np.exp(-self.data)),parents=[self],operation='sigmoid')
-        def _backward():
-            sig = new_tensor.data
-            self.grad += new_tensor.grad * sig * (1 - sig)
-
-        new_tensor._backward = _backward
-        return new_tensor
+        return SigmoidOp().apply(self)
 
     def __repr__(self):
         def indent(value, spaces=4):
@@ -133,10 +101,6 @@ class tensor:
         build(self)
         return order
 
-
     def backward(self):
-        self.grad = np.ones_like(self.data)
-        topo = self.topological_sort()
-
-        for v in reversed(topo):
-            v._backward()    
+        from ..autograd.engine import backward
+        backward(self)

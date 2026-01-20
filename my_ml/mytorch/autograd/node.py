@@ -1,0 +1,20 @@
+class Op:
+    def __init__(self):
+        self.parents = []
+
+    def forward(self,*inputs):
+        raise NotImplementedError
+
+    def backward(self,*grad_output):
+        raise NotImplementedError
+    
+    def apply(self,*parents):
+        from ..tensor.tensor import tensor 
+        self.parents = parents
+
+        inputs = [t.data for t in parents]
+        out_data = self.forward(*inputs)
+
+        out = tensor(out_data,self.parents,grad_fn=self)
+
+        return out
