@@ -26,7 +26,7 @@ class Module:
             return
         
         elif isinstance(value,Module):
-            self._modules[name] = value
+            self._modules.append(value)
             super().__setattr__(name,value)
             return
         

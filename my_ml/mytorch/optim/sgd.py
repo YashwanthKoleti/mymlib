@@ -4,8 +4,14 @@ from .optimizer import Optimizer
 from ..nn.module import Module
 
 class SGD:
-    def __init__(self,module,learning_rate = 1e-4):
-        self.lr = learning_rate
-        self.module = module
+    def __init__(self,param,lr = 1e-4):
+        self.lr = lr
+        self.parameters = param
     
-    
+    def zero_grad(self):
+        for para in self.parameters:
+            para.grad[:] = 0.0
+
+    def step(self):
+        for para in self.parameters:
+            para.data -= self.lr*para.grad

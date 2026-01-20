@@ -19,7 +19,7 @@ def topological_sort(v):
     built(v)
     return node
 
-def backward(v):
+def backward(v,vertbose=False):
     topo = topological_sort(v)
     v.grad = np.ones_like(v.data)
 
@@ -35,3 +35,6 @@ def backward(v):
                 parent_node.grad = parent_grad
             else:
                 parent_node.grad += parent_grad
+
+    if vertbose:
+        print(topo)
