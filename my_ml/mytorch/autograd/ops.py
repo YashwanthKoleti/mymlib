@@ -25,8 +25,10 @@ def broadcast(arr,shape):
         return np.broadcast_to(arr, shape)
     
 def un_broadcast(arr, shape):
-        if np.isscalar(arr) or arr.shape == () :
-            return np.ones_like(shape)*arr
+        arr = np.asarray(arr)
+        if np.isscalar(arr) or arr.shape == ():
+            return np.full(shape, arr)
+        
     # Reduce extra dimensions
         while arr.ndim > len(shape):
             arr = arr.sum(axis=0)
@@ -122,24 +124,62 @@ class PowerOp(Op):
         return (b*(a**(b-1))*grad_output,np.zeros_like(b))
     
 class MeanOp(Op):
-    def forward(self,a):
+    def apply(self,a,axis,keepdims = False):
+        from ..tensor.tensor import tensor 
+        self.parents = [a]
+        self.axis = axis
+        self.keepdims = keepdims
+        out_data = self.forward(a.data,axis=axis,keepdims=keepdims)
+        return tensor(out_data,self.parents,grad_fn=self)
+    
+    def forward(self,a,axis,keepdims):
         self.saved_tensor = a
-        out_data = np.mean(a)
+        out_data = np.mean(a,axis=axis,keepdims = keepdims)
         return out_data
     
     def backward(self, grad_output):
         a = self.saved_tensor
-        return un_broadcast(grad_output/np.prod(a.shape),a.shape)
-    
+        axis = self.axis
+
+        # compute divisor for per-axis mean
+        if axis is None:
+            divisor = np.prod(a.shape)
+        else:
+            divisor = a.shape[axis]
+
+        # if keepdims=False, expand dims to match original shape
+        if not self.keepdims and axis is not None:
+            grad_output = np.expand_dims(grad_output, axis=axis)
+
+        # broadcast to original shape
+        grad = np.ones_like(a) * (grad_output / divisor)
+        return (grad,)
+
 class SumOp(Op):
-    def forward(self, a):
+    def apply(self,a,axis,keepdims = False):
+        from ..tensor.tensor import tensor 
+        self.parents = [a]
+        self.axis = axis
+        self.keepdims = keepdims
+        out_data = self.forward(a.data,axis=axis,keepdims = keepdims)
+        return tensor(out_data,self.parents,grad_fn=self)
+    
+    def forward(self, a,axis,keepdims):
         self.saved_tensor = a
-        return np.sum(a)
+        return np.sum(a,axis = axis,keepdims=keepdims)
     
     def backward(self, grad_output):
         a = self.saved_tensor
-        return un_broadcast(grad_output,a.shape)
-    
+        axis = self.axis
+
+        # if keepdims=False, expand dims to match original
+        if not self.keepdims and axis is not None:
+            grad_output = np.expand_dims(grad_output, axis=axis)
+
+        # broadcast to original shape
+        grad = np.ones_like(a) * grad_output
+        return (grad,)
+
 class LogOp(Op):
     def forward(self, a):
         self.saved_tensor = a
@@ -157,3 +197,53 @@ class ExpOp(Op):
     def backward(self, grad_output):
         a = self.saved_tensor
         return (np.exp(a)*grad_output,)
+    
+class MaxOp(Op):
+    def apply(self,a,axis,keepdims = False):
+        from ..tensor.tensor import tensor 
+        self.parents = [a]
+        out_data = self.forward(a.data,axis=axis,keepdims=keepdims)
+        return tensor(out_data,self.parents,grad_fn=self)
+
+    def forward(self, a,axis,keepdims):
+        self.saved_tensor = a
+        self.axis = axis
+        self.idxs = np.argmax(a,axis=axis)
+
+        expanded = np.expand_dims(self.idxs, axis=axis)
+        return np.take_along_axis(a, expanded, axis=axis)
+    
+    def backward(self, grad_output):
+        a = self.saved_tensor
+        idx = self.idxs
+        axis = self.axis
+
+        grad = np.zeros_like(a)
+        expanded_idx = np.expand_dims(idx, axis=axis)
+
+        np.put_along_axis(grad, expanded_idx, grad_output, axis=axis)
+
+        return (grad,)
+
+class GatherOp(Op):
+    def apply(self,a,labels):
+        from ..tensor.tensor import tensor
+        self.parents = [a]
+        out_data = self.forward(a.data,labels)
+        return tensor(out_data,self.parents,grad_fn=self,required_grad=True)
+
+    def forward(self, a,labels):
+        self.saved_tensor = a
+        self.labels = labels
+        
+        data = a[np.arange(a.shape[0]),self.labels]
+        return data
+    
+    def backward(self, grad_output):
+        labels = self.labels
+        a = self.saved_tensor
+
+        grad = np.zeros_like(a)
+        grad[np.arange(len(labels)), labels] = grad_output
+
+        return (grad,)

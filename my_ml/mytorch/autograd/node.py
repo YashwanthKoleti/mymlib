@@ -23,6 +23,6 @@ class Op:
 
             
         out_data = self.forward(*inputs)
-        out = tensor(out_data,self.parents,grad_fn=self)
+        out = tensor(out_data,self.parents,grad_fn=self,required_grad=True)
 
         return out

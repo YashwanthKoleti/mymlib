@@ -1,10 +1,11 @@
 import numpy as np
-from ..autograd.ops import AddOp,MulOp,MatMulOp,ReLUOp,SigmoidOp,PowerOp,SumOp,MeanOp,LogOp,ExpOp
+from ..autograd.ops import AddOp,MulOp,MatMulOp,ReLUOp,SigmoidOp,PowerOp,SumOp,MeanOp,LogOp,ExpOp,MaxOp,GatherOp
 
 ########
 # self.parents is a list,
 # so when do any operation, dont forget to assign self.parents as list
 ######## 
+
 
 
 class tensor:
@@ -97,18 +98,24 @@ class tensor:
         other = other if isinstance(other,tensor) else tensor(other)
         return PowerOp().apply(self,other)
     
-    def mean(self):
-        return MeanOp().apply(self)
+    def mean(self,axis = None,keepdims = False):
+        return MeanOp().apply(self,axis,keepdims=keepdims)
 
-    def sum(self):
-        return SumOp().apply(self)
+    def sum(self,axis = None,keepdims = False):
+        return SumOp().apply(self,axis,keepdims=keepdims)
     
     def log(self):
         return LogOp().apply(self)
     
     def exp(self):
         return ExpOp().apply(self)
+    
+    def max(self,axis = None,keepdims = False):
+        return MaxOp().apply(self,axis,keepdims=keepdims)
         
+    def gather(self,labels):
+        return GatherOp().apply(self,labels=labels)
+    
     def __repr__(self):
         def indent(value, spaces=4):
             s = str(value)
@@ -138,7 +145,7 @@ class tensor:
         build(self)
         return order
 
-    def backward(self,grad = None):
+    def backward(self,grad = None,verbose = False,pre_topo = False):
         if grad is not None:
             if self.grad.shape != grad.shape:
                 raise RuntimeError("Incorrect gradient size")
@@ -146,4 +153,4 @@ class tensor:
 
 
         from ..autograd.engine import backward
-        backward(self,grad)
+        backward(self,grad,verbose,pre_topo=pre_topo)
