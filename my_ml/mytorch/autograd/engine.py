@@ -19,9 +19,17 @@ def topological_sort(v):
     built(v)
     return node
 
-def backward(v,vertbose=False):
+def backward(v,grad = None,verbrose=False):
     topo = topological_sort(v)
-    v.grad = np.ones_like(v.data)
+
+    if grad is not None:
+        if v.grad.shape != grad.shape:
+            raise RuntimeError("Incorrect gradient size")
+        v.grad = grad
+    else:
+        v.grad = np.ones_like(v.data)
+
+    #print(topo)
 
     for node in reversed(topo):
         if node.grad_fn is None:
@@ -36,5 +44,4 @@ def backward(v,vertbose=False):
             else:
                 parent_node.grad += parent_grad
 
-    if vertbose:
-        print(topo)
+    #print(topo)

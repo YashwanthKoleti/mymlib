@@ -1,6 +1,25 @@
 from .node import Op
 import numpy as np
 
+#########
+# Always return gradients from backward() as a tuple:
+#   (grad_a, grad_b) for binary ops
+#   (grad_a,) for unary ops
+#
+# The autograd engine uses zip(parent_nodes, gradients),
+# zip only works for iterable
+# so the gradients object must be iterable.
+# 
+# If you return grad_a instead of (grad_a,), Python treats it as a scalar
+# scalar i snot an iterable
+# and zip() will raise a TypeError.
+########
+
+########
+# In Forward(self,*parents),
+# parents are tensor.data(basically they are numpy), 
+# they are not tensors
+########
 
 def broadcast(arr,shape):
         return np.broadcast_to(arr, shape)
@@ -90,14 +109,17 @@ class SigmoidOp(Op):
         return (grad_a,)
 
 class PowerOp(Op):
-    def forward(self,a):
-        self.saved_tensor = a
-        return a*a
+    def forward(self,a,b):
+        self.saved_tensor = (a,b)
+        return a**b
     
     def backward(self,grad_output):
-        a = self.saved_tensor
 
-        return (2*a*grad_output,)
+        a,b = self.saved_tensor
+        # grad_b is (a**b)*np.log(a)*grad_output
+        # so we keep grad_b is 0, because sometimes a can have -ve values
+        # Also, b is typically a constant exponent like 2 in MSE error**2
+        return (b*(a**(b-1))*grad_output,np.zeros_like(b))
     
 class MeanOp(Op):
     def forward(self,a):
@@ -107,7 +129,7 @@ class MeanOp(Op):
     
     def backward(self, grad_output):
         a = self.saved_tensor
-        return un_broadcast(grad_output/4,a.shape)
+        return un_broadcast(grad_output/np.prod(a.shape),a.shape)
     
 class SumOp(Op):
     def forward(self, a):
@@ -117,3 +139,21 @@ class SumOp(Op):
     def backward(self, grad_output):
         a = self.saved_tensor
         return un_broadcast(grad_output,a.shape)
+    
+class LogOp(Op):
+    def forward(self, a):
+        self.saved_tensor = a
+        return np.log(np.maximum(1e-15,a))
+    
+    def backward(self, grad_output):
+        a = self.saved_tensor
+        return (grad_output*(a**-1),)
+    
+class ExpOp(Op):
+    def forward(self, a):
+        self.saved_tensor = a
+        return np.exp(a)
+    
+    def backward(self, grad_output):
+        a = self.saved_tensor
+        return (np.exp(a)*grad_output,)

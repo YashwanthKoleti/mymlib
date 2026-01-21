@@ -1,5 +1,11 @@
 import numpy as np
-from ..autograd.ops import AddOp,MulOp,MatMulOp,ReLUOp,SigmoidOp,PowerOp,SumOp,MeanOp
+from ..autograd.ops import AddOp,MulOp,MatMulOp,ReLUOp,SigmoidOp,PowerOp,SumOp,MeanOp,LogOp,ExpOp
+
+########
+# self.parents is a list,
+# so when do any operation, dont forget to assign self.parents as list
+######## 
+
 
 class tensor:
     def __init__(self,data,parents = None,grad_fn = None,required_grad = True):
@@ -55,22 +61,31 @@ class tensor:
         return self + other
 
     def __rmul__(self, other):
+        other = other if isinstance(other,tensor) else tensor(other)
         return self * other
 
     def __neg__(self):
         return self * -1
 
     def __sub__(self, other):
+        other = other if isinstance(other,tensor) else tensor(other)
         return self + (-other)
 
     def __rsub__(self, other):
+        other = other if isinstance(other,tensor) else tensor(other)
         return other + (-self)
     
     def __truediv__(self, other):
+        other = other if isinstance(other,tensor) else tensor(other)
         return self * (other**-1)
 
     def __rtruediv__(self, other):
+        other = other if isinstance(other,tensor) else tensor(other)
         return other * (self**-1)
+
+    def __pow__(self,other):
+        other = other if isinstance(other,tensor) else tensor(other)
+        return PowerOp().apply(self, other)
 
     def relu(self):
         return ReLUOp().apply(self)
@@ -78,15 +93,22 @@ class tensor:
     def sigmoid(self):
         return SigmoidOp().apply(self)
 
-    def power(self):
-        return PowerOp().apply(self)
+    def power(self,other):
+        other = other if isinstance(other,tensor) else tensor(other)
+        return PowerOp().apply(self,other)
     
     def mean(self):
         return MeanOp().apply(self)
 
     def sum(self):
         return SumOp().apply(self)
-
+    
+    def log(self):
+        return LogOp().apply(self)
+    
+    def exp(self):
+        return ExpOp().apply(self)
+        
     def __repr__(self):
         def indent(value, spaces=4):
             s = str(value)
@@ -116,6 +138,12 @@ class tensor:
         build(self)
         return order
 
-    def backward(self):
+    def backward(self,grad = None):
+        if grad is not None:
+            if self.grad.shape != grad.shape:
+                raise RuntimeError("Incorrect gradient size")
+            self.grad = grad
+
+
         from ..autograd.engine import backward
-        backward(self)
+        backward(self,grad)

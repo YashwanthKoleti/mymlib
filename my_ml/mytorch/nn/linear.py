@@ -6,11 +6,12 @@ class Linear(Module):
     def __init__(self,input_dim,output_dim,bias = True):
         super().__init__()
 
-        self.weights = tensor(np.ones((input_dim,output_dim)))
+        self.weights = tensor(np.random.randn(input_dim, output_dim) * np.sqrt(1.0 / input_dim))
         if bias:
-            self.bias = tensor(np.ones(output_dim))
+            self.bias = tensor(np.ones((1, output_dim))*0.01)
         else:
-            self.bias = tensor(np.zeros(output_dim),required_grad = False)
+            self.bias = tensor(np.ones((1, output_dim))*0.01, required_grad=False)
+
     
     def forward(self,x):
         if not isinstance(x, tensor):
