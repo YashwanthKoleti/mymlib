@@ -33,19 +33,27 @@ class MSE(Loss):
     
 class CrossEntropy(Loss):
 
-    def forward(self,y_pred,y_true):
-        if not isinstance(y_pred,tensor):
-            y_pred = tensor(y_pred,required_grad=True)
+    def forward(self, y_pred, y_true):
+        # y_pred: [batch, num_classes] raw logits
+        # y_true: [batch] class indices
+
+        if not isinstance(y_pred, tensor):
+            y_pred = tensor(y_pred, required_grad=True)
 
         self.y_pred = y_pred
-        expos = self.y_pred.exp()
-        demo = (expos.sum(axis=1,keepdims=True))
-        probs = expos/demo
-        logits = probs.log()
+        self.y_true = y_true
 
-        error = logits.gather(y_true).mean()
-        self.error = -error
-        return self.error
+        # log-sum-exp trick (stable softmax)
+        max_vals = y_pred.max(axis=1, keepdims=True)
+        shifted = y_pred - max_vals
+        log_sum_exp = (shifted.exp().sum(axis=1, keepdims=True)).log()
+        log_probs = shifted - log_sum_exp  # log softmax
+
+        correct_log_probs = log_probs.gather(y_true)
+
+        loss = -correct_log_probs.mean()
+        self.error = loss
+        return loss
 
     def backward(self):
         return self.error.backward()
