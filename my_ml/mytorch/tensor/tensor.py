@@ -1,5 +1,5 @@
 import numpy as np
-from ..autograd.ops import AddOp,MulOp,MatMulOp,ReLUOp,SigmoidOp,PowerOp,SumOp,MeanOp,LogOp,ExpOp,MaxOp,GatherOp
+from ..autograd.ops import AddOp,MulOp,MatMulOp,ReLUOp,SigmoidOp,PowerOp,SumOp,MeanOp,LogOp,ExpOp,MaxOp,GatherOp,TransposeOp,ReshapeOp
 
 ########
 # self.parents is a list,
@@ -116,6 +116,12 @@ class tensor:
     def gather(self,labels):
         return GatherOp().apply(self,labels=labels)
     
+    def transpose(self):
+        return TransposeOp().apply(self)
+    
+    def reshape(self,new_shape):
+        return ReshapeOp().apply(self,new_shape=new_shape)
+
     def __repr__(self):
         def indent(value, spaces=4):
             s = str(value)

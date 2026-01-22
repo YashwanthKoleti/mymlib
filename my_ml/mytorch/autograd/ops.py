@@ -247,3 +247,25 @@ class GatherOp(Op):
         grad[np.arange(len(labels)), labels] = grad_output
 
         return (grad,)
+    
+class TransposeOp(Op):
+    def forward(self, a):
+        return a.T
+    
+    def backward(self, grad_output):
+        return (grad_output.T,)
+    
+class ReshapeOp(Op):
+    def apply(self,a,new_shape):
+        from ..tensor.tensor import tensor
+        self.parents = [a]
+        out_data = self.forward(a.data,new_shape)
+        return tensor(out_data,self.parents,grad_fn=self)
+    
+    def forward(self, a,new_shape):
+        self.saved_tensor = a
+        return np.reshape(a,new_shape)
+    
+    def backward(self, grad_output):
+        a = self.saved_tensor
+        return (np.reshape(grad_output,a.shape),)
