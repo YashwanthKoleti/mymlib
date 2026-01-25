@@ -1,5 +1,5 @@
 import numpy as np
-from ..autograd.ops import AddOp,MulOp,MatMulOp,ReLUOp,SigmoidOp,PowerOp,SumOp,MeanOp,LogOp,ExpOp,MaxOp,GatherOp,TransposeOp,ReshapeOp
+from ..autograd.ops import AddOp,MulOp,MatMulOp,ReLUOp,SigmoidOp,PowerOp,SumOp,MeanOp,LogOp,ExpOp,MaxOp,GatherOp,TransposeOp,ReshapeOp,TanhOp
 
 ########
 # self.parents is a list,
@@ -93,6 +93,9 @@ class tensor:
 
     def sigmoid(self):
         return SigmoidOp().apply(self)
+    
+    def tanh(self):
+        return TanhOp().apply(self)
 
     def power(self,other):
         other = other if isinstance(other,tensor) else tensor(other)

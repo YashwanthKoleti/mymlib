@@ -269,3 +269,13 @@ class ReshapeOp(Op):
     def backward(self, grad_output):
         a = self.saved_tensor
         return (np.reshape(grad_output,a.shape),)
+    
+class TanhOp(Op):
+    def forward(self, a):
+        self.saved_tensor = a
+        self.buffer = np.tanh(a)
+        return self.buffer
+    
+    def backward(self, grad_output):
+        a = self.saved_tensor
+        return ((1-np.square(self.buffer))*grad_output,)
