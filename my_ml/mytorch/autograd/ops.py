@@ -747,3 +747,5 @@ class maxpool3d(Op):
             a_grad = a_grad_padded
 
         return (a_grad,)
+    
+### Loops in m=pooling backward are exoensive, try to vectorize those

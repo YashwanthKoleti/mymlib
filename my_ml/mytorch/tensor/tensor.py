@@ -1,5 +1,5 @@
 import numpy as np
-from ..autograd.ops import AddOp,MulOp,MatMulOp,ReLUOp,SigmoidOp,PowerOp,SumOp,MeanOp,LogOp,ExpOp,MaxOp,GatherOp,TransposeOp,ReshapeOp,TanhOp,Conv1dOp,Conv2dOp,Conv3dOp
+from ..autograd.ops import AddOp,MulOp,MatMulOp,ReLUOp,SigmoidOp,PowerOp,SumOp,MeanOp,LogOp,ExpOp,MaxOp,GatherOp,TransposeOp,ReshapeOp,TanhOp,Conv1dOp,Conv2dOp,Conv3dOp,maxpool1d,maxpool2d,maxpool3d
 
 ########
 # self.parents is a list,
@@ -136,6 +136,36 @@ class tensor:
     def Con3d(self,other,padding,stride):
         other = other if isinstance(other,tensor) else tensor(other)
         return Conv3dOp().apply(self,other,padding,stride)
+    
+    def Maxpool1d(self,stride,padding,kernel_size):
+        return maxpool1d().apply(self, stride,padding,kernel_size)
+    
+    def Maxpool2d(self,stride,padding,kernel_size):
+        return maxpool2d().apply(self, stride,padding,kernel_size)
+    
+    def Maxpool3d(self,stride,padding,kernel_size):
+        return maxpool3d().apply(self, stride,padding,kernel_size)
+    
+    def Avgpool1d(self,padding,stride,kernel_size):
+        kernel = np.ones(kernel_size, dtype=np.float32)
+        kernel = kernel/kernel.size
+        other = tensor(kernel)
+        kernel.required_grad = False
+        return Conv1dOp().apply(self,other,padding,stride)
+    
+    def Avgpool2d(self,padding,stride,kernel_size):
+        kernel = np.ones(kernel_size, dtype=np.float32)
+        kernel = kernel/kernel.size
+        other = tensor(kernel)
+        kernel.required_grad = False
+        return Conv1dOp().apply(self,other,padding,stride)
+    
+    def Avgpool3d(self,padding,stride,kernel_size):
+        kernel = np.ones(kernel_size, dtype=np.float32)
+        kernel = kernel/kernel.size
+        other = tensor(kernel)
+        kernel.required_grad = False
+        return Conv1dOp().apply(self,other,padding,stride)
 
     def __repr__(self):
         def indent(value, spaces=4):
