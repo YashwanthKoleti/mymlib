@@ -1,5 +1,5 @@
 import numpy as np
-from ..autograd.ops import AddOp,MulOp,MatMulOp,ReLUOp,SigmoidOp,PowerOp,SumOp,MeanOp,LogOp,ExpOp,MaxOp,GatherOp,TransposeOp,ReshapeOp,TanhOp
+from ..autograd.ops import AddOp,MulOp,MatMulOp,ReLUOp,SigmoidOp,PowerOp,SumOp,MeanOp,LogOp,ExpOp,MaxOp,GatherOp,TransposeOp,ReshapeOp,TanhOp,Conv1dOp,Conv2dOp,Conv3dOp
 
 ########
 # self.parents is a list,
@@ -124,6 +124,18 @@ class tensor:
     
     def reshape(self,new_shape):
         return ReshapeOp().apply(self,new_shape=new_shape)
+    
+    def Con1d(self,other,padding,stride):
+        other = other if isinstance(other,tensor) else tensor(other)
+        return Conv1dOp().apply(self,other,padding,stride)
+    
+    def Con2d(self,other,padding,stride):
+        other = other if isinstance(other,tensor) else tensor(other)
+        return Conv2dOp().apply(self,other,padding,stride)
+    
+    def Con3d(self,other,padding,stride):
+        other = other if isinstance(other,tensor) else tensor(other)
+        return Conv3dOp().apply(self,other,padding,stride)
 
     def __repr__(self):
         def indent(value, spaces=4):

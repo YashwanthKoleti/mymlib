@@ -1,6 +1,9 @@
 from .node import Op
 import numpy as np
 
+from scipy.signal import correlate, correlate2d
+from scipy.signal import convolve, convolve2d
+
 #########
 # Always return gradients from backward() as a tuple:
 #   (grad_a, grad_b) for binary ops
@@ -279,3 +282,468 @@ class TanhOp(Op):
     def backward(self, grad_output):
         a = self.saved_tensor
         return ((1-np.square(self.buffer))*grad_output,)
+
+
+class Conv1dOp(Op):
+
+    def apply(self,a,b,stride,padding):
+        from ..tensor.tensor import tensor
+        self.parents = [a,b]
+        out_data = self.forward(a.data,b.data,stride,padding)
+        return tensor(out_data,self.parents,grad_fn=self,required_grad=True)
+
+    def forward(self, a, b, stride=1, padding=0):
+
+        self.saved_tensor = (a, b)
+        self.cond = (stride, padding)
+
+        a_padded = np.pad(a, (padding, padding))
+        conv = correlate(a_padded, b, mode='valid')
+
+        # stride
+        output = conv[::stride]
+
+        return output
+
+    def backward(self, grad_output):
+
+        a, b = self.saved_tensor
+        stride, padding = self.cond
+
+        # -------------------------------------------------
+        # Undo stride
+        # -------------------------------------------------
+
+        if stride > 1:
+            expanded = np.zeros(
+                (len(grad_output) - 1) * stride + 1
+            )
+
+            expanded[::stride] = grad_output
+            grad_output = expanded
+
+        # -------------------------------------------------
+        # dA
+        # full convolution with kernel
+        # -------------------------------------------------
+
+        da_padded = convolve(grad_output, b, mode='full')
+
+        # Remove forward padding
+        if padding > 0:
+            da = da_padded[padding:-padding]
+        else:
+            da = da_padded
+
+        # -------------------------------------------------
+        # dB
+        # correlation(input, grad)
+        # -------------------------------------------------
+
+        a_padded = np.pad(a, (padding, padding))
+
+        db = correlate(a_padded, grad_output, mode='valid')
+
+        return da, db
+
+
+class Conv2dOp(Op):
+
+    def apply(self,a,b,stride,padding):
+        from ..tensor.tensor import tensor
+        self.parents = [a,b]
+        out_data = self.forward(a.data,b.data,stride,padding)
+        return tensor(out_data,self.parents,grad_fn=self,required_grad=True)
+
+    def forward(self, a, b, stride=1, padding=0):
+
+        self.saved_tensor = (a, b)
+        self.cond = (stride, padding)
+
+        # Padding
+        a_padded = np.pad(
+            a,
+            ((padding, padding), (padding, padding))
+        )
+
+        # Cross-correlation
+        conv = correlate2d(a_padded, b, mode='valid')
+
+        # Stride
+        output = conv[::stride, ::stride]
+
+        return output
+
+    def backward(self, grad_output):
+
+        a, b = self.saved_tensor
+        stride, padding = self.cond
+
+        # -------------------------------------------------
+        # Undo stride
+        # -------------------------------------------------
+
+        if stride > 1:
+
+            h, w = grad_output.shape
+
+            expanded = np.zeros((
+                (h - 1) * stride + 1,
+                (w - 1) * stride + 1
+            ))
+
+            expanded[::stride, ::stride] = grad_output
+
+            grad_output = expanded
+
+        # -------------------------------------------------
+        # dA
+        # full convolution
+        # -------------------------------------------------
+
+        da_padded = convolve2d(
+            grad_output,
+            b,
+            mode='full'
+        )
+
+        # Remove padding
+        if padding > 0:
+            da = da_padded[
+                padding:-padding,
+                padding:-padding
+            ]
+        else:
+            da = da_padded
+
+        # -------------------------------------------------
+        # dB
+        # correlation(input, grad)
+        # -------------------------------------------------
+
+        a_padded = np.pad(
+            a,
+            ((padding, padding), (padding, padding))
+        )
+
+        db = correlate2d(
+            a_padded,
+            grad_output,
+            mode='valid'
+        )
+
+        return da, db
+
+class Conv3dOp(Op):
+
+    def apply(self,a,b,stride,padding):
+        from ..tensor.tensor import tensor
+        self.parents = [a,b]
+        out_data = self.forward(a.data,b.data,stride,padding)
+        return tensor(out_data,self.parents,grad_fn=self,required_grad=True)
+
+    def forward(self, a, b, stride=1, padding=0):
+
+        self.saved_tensor = (a, b)
+        self.cond = (stride, padding)
+
+        # Padding
+        a_padded = np.pad(
+            a,
+            (
+                (padding, padding),
+                (padding, padding),
+                (padding, padding)
+            )
+        )
+
+        # Cross-correlation
+        out_shape = (
+            a_padded.shape[0] - b.shape[0] + 1,
+            a_padded.shape[1] - b.shape[1] + 1,
+            a_padded.shape[2] - b.shape[2] + 1,
+        )
+
+        conv = np.zeros(out_shape)
+
+        for z in range(out_shape[0]):
+            for i in range(out_shape[1]):
+                for j in range(out_shape[2]):
+
+                    region = a_padded[
+                        z:z+b.shape[0],
+                        i:i+b.shape[1],
+                        j:j+b.shape[2]
+                    ]
+
+                    conv[z, i, j] = np.sum(region * b)
+
+        # Stride
+        output = conv[
+            ::stride,
+            ::stride,
+            ::stride
+        ]
+
+        return output
+
+    def backward(self, grad_output):
+
+        a, b = self.saved_tensor
+        stride, padding = self.cond
+
+        # -------------------------------------------------
+        # Undo stride
+        # -------------------------------------------------
+
+        if stride > 1:
+
+            d, h, w = grad_output.shape
+
+            expanded = np.zeros((
+                (d - 1) * stride + 1,
+                (h - 1) * stride + 1,
+                (w - 1) * stride + 1
+            ))
+
+            expanded[
+                ::stride,
+                ::stride,
+                ::stride
+            ] = grad_output
+
+            grad_output = expanded
+
+        # -------------------------------------------------
+        # dA
+        # full convolution
+        # -------------------------------------------------
+
+        da_padded_shape = (
+            grad_output.shape[0] + b.shape[0] - 1,
+            grad_output.shape[1] + b.shape[1] - 1,
+            grad_output.shape[2] + b.shape[2] - 1
+        )
+
+        da_padded = np.zeros(da_padded_shape)
+
+        # full convolution
+        for z in range(grad_output.shape[0]):
+            for i in range(grad_output.shape[1]):
+                for j in range(grad_output.shape[2]):
+
+                    da_padded[
+                        z:z+b.shape[0],
+                        i:i+b.shape[1],
+                        j:j+b.shape[2]
+                    ] += grad_output[z, i, j] * b
+
+        # Remove padding
+        if padding > 0:
+            da = da_padded[
+                padding:-padding,
+                padding:-padding,
+                padding:-padding
+            ]
+        else:
+            da = da_padded
+
+        # -------------------------------------------------
+        # dB
+        # correlation(input, grad)
+        # -------------------------------------------------
+
+        a_padded = np.pad(
+            a,
+            (
+                (padding, padding),
+                (padding, padding),
+                (padding, padding)
+            )
+        )
+
+        db = np.zeros_like(b)
+
+        for z in range(b.shape[0]):
+            for i in range(b.shape[1]):
+                for j in range(b.shape[2]):
+
+                    region = a_padded[
+                        z:z+grad_output.shape[0],
+                        i:i+grad_output.shape[1],
+                        j:j+grad_output.shape[2]
+                    ]
+
+                    db[z, i, j] = np.sum(region * grad_output)
+
+        return da, db
+
+class maxpool1d(Op):
+    def apply(self, a,stride,padding,kernel_size):
+        from ..tensor.tensor import tensor
+        self.parents = [a]
+        out_data = self.forward(a.data,stride,padding,kernel_size)
+        return tensor(out_data,self.parents,grad_fn=self,required_grad=True)
+
+    def forward(self, a,stride,padding,kernel_size):
+        self.stride = stride
+        self.padding = padding
+        self.kernel_size = kernel_size
+        self.input_shape = a.shape
+        self.saved_tensors = (a,)
+
+        from numpy.lib.stride_tricks import sliding_window_view
+        a_padded = np.pad(a,(padding,padding))
+        self.padded_shape = a_padded.shape
+        windows = sliding_window_view(a_padded,window_shape=kernel_size)
+        windows = windows[::stride]
+        self.windows = windows
+
+        self.argmax = np.argmax(windows,axis = -1)
+        return windows.max(axis = -1)
+    
+    def backward(self, grad_output):
+        a = self.saved_tensors
+        a_grad_padded = np.zeros(self.padded_shape)
+
+        for i in range(len(self.argmax)):
+            idx = i*self.stride + self.argmax[i]
+            a_grad_padded[idx] += grad_output[i]
+
+        if self.padding > 0:
+            a_grad = a_grad_padded[
+                self.padding:-self.padding
+            ]
+        else:
+            a_grad = a_grad_padded
+        return (a_grad,)
+    
+class maxpool2d(Op):
+    def apply(self, a,stride,padding,kernel_size):
+        from ..tensor.tensor import tensor
+        self.parents = [a]
+        out_data = self.forward(a.data,stride,padding,kernel_size)
+        return tensor(out_data,self.parents,grad_fn=self,required_grad=True)
+
+    def forward(self, a,stride,padding,kernel_size):
+        self.stride = stride
+        self.padding = padding
+        self.kernel_size = kernel_size
+        self.input_shape = a.shape
+        self.saved_tensors = (a)
+
+        from numpy.lib.stride_tricks import sliding_window_view
+        a_padded = np.pad(a,((padding,padding),(padding,padding)))
+        self.padded_shape = a_padded.shape
+        windows = sliding_window_view(a_padded,window_shape=kernel_size)
+        windows = windows[::stride,::stride]
+        self.windows = windows
+
+        out_h, out_w = windows.shape[:2]
+        flat_windows = windows.reshape(out_h,out_w,-1)
+        self.argmax = flat_windows.argmax(axis=-1)
+
+        return windows.max(axis = (-2,-1))
+    
+    def backward(self, grad_output):
+
+        a_grad_padded = np.zeros(self.padded_shape)
+        out_h, out_w = grad_output.shape
+
+        k = self.kernel_size
+
+        for i in range(out_h):
+            for j in range(out_w):
+
+                flat_idx = self.argmax[i,j]
+
+                r = flat_idx // k
+                c = flat_idx % k
+
+                h = i * self.stride + r
+                w = j * self.stride + c
+
+                a_grad_padded[h,w] += grad_output[i,j]
+        
+        if self.padding > 0:
+            a_grad = a_grad_padded[
+                self.padding:-self.padding,
+                self.padding:-self.padding
+            ]
+        else:
+            a_grad = a_grad_padded
+
+        return (a_grad,)
+
+class maxpool3d(Op):
+
+    def apply(self, a, stride, padding, kernel_size):
+        from ..tensor.tensor import tensor
+
+        self.parents = [a]
+        out_data = self.forward(a.data,stride,padding,kernel_size)
+
+        return tensor(out_data,self.parents,grad_fn=self,required_grad=True)
+
+    def forward(self, a, stride, padding, kernel_size):
+
+        self.stride = stride
+        self.padding = padding
+        self.kernel_size = kernel_size
+        self.input_shape = a.shape
+
+        from numpy.lib.stride_tricks import sliding_window_view
+
+
+        a_padded = np.pad(a,((padding, padding),(padding, padding),(padding, padding)))
+        self.padded_shape = a_padded.shape
+        windows = sliding_window_view(a_padded,window_shape=(kernel_size, kernel_size, kernel_size))
+
+        windows = windows[
+            ::stride,
+            ::stride,
+            ::stride
+        ]
+
+        self.windows = windows
+        out_d, out_h, out_w = windows.shape[:3]
+        flat_windows = windows.reshape(out_d,out_h,out_w,-1)
+
+        self.argmax = flat_windows.argmax(axis=-1)
+        return windows.max(axis=(-3, -2, -1))
+
+    def backward(self, grad_output):
+
+        a_grad_padded = np.zeros(self.padded_shape)
+        out_d, out_h, out_w = grad_output.shape
+        k = self.kernel_size
+
+        for i in range(out_d):
+            for j in range(out_h):
+                for l in range(out_w):
+
+                    flat_idx = self.argmax[i, j, l]
+
+                    d = flat_idx // (k * k)
+
+                    rem = flat_idx % (k * k)
+
+                    r = rem // k
+                    c = rem % k
+
+                    z = i * self.stride + d
+                    h = j * self.stride + r
+                    w = l * self.stride + c
+
+                    a_grad_padded[z, h, w] += grad_output[i, j, l]
+
+        if self.padding > 0:
+            a_grad = a_grad_padded[
+                self.padding:-self.padding,
+                self.padding:-self.padding,
+                self.padding:-self.padding
+            ]
+        else:
+            a_grad = a_grad_padded
+
+        return (a_grad,)
