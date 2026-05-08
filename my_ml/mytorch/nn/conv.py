@@ -29,6 +29,16 @@ class Con1d(Module):
             x.data = np.array([x.data])
 
         return x.Con1d(self.kernel,self.padding,self.stride) + self.bias
+    
+    def __repr__(self):
+        return (
+            f"Con1d(in_channel={self.in_channel}, "
+            f"out_channel={self.out_channel}, "
+            f"kernel_size={self.kernel_size}, "
+            f"padding={self.padding}, "
+            f"stride={self.stride}, "
+            f"bias={self.bias is not None})"
+        )
 
 class Con2d(Module):
     def __init__(self,in_channel,out_channel,kernel_size,padding,stride,bias = True):
@@ -57,7 +67,17 @@ class Con2d(Module):
             x.data = np.array([x.data])
 
         return x.Con2d(self.kernel,self.padding,self.stride) + self.bias
-        
+
+    def __repr__(self):
+        return (
+            f"Con2d(in_channel={self.in_channel}, "
+            f"out_channel={self.out_channel}, "
+            f"kernel_size={self.kernel_size}, "
+            f"padding={self.padding}, "
+            f"stride={self.stride}, "
+            f"bias={self.bias is not None})"
+        )
+
 class Con3d(Module):
     def __init__(self,in_channel,out_channel,kernel_size,padding,stride,bias = True):
         self.in_channel = in_channel
@@ -85,3 +105,13 @@ class Con3d(Module):
             x.data = np.array([x.data])
 
         return x.Con3d(self.kernel,self.padding,self.stride) + self.bias
+    
+    def __repr__(self):
+        return (
+            f"Con3d(in_channel={self.in_channel}, "
+            f"out_channel={self.out_channel}, "
+            f"kernel_size={self.kernel_size}, "
+            f"padding={self.padding}, "
+            f"stride={self.stride}, "
+            f"bias={self.bias is not None})"
+        )

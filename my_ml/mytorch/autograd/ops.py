@@ -635,7 +635,7 @@ class maxpool2d(Op):
         from numpy.lib.stride_tricks import sliding_window_view
         a_padded = np.pad(a,((padding,padding),(padding,padding)))
         self.padded_shape = a_padded.shape
-        windows = sliding_window_view(a_padded,window_shape=kernel_size)
+        windows = sliding_window_view(a_padded,window_shape=(kernel_size,kernel_size))
         windows = windows[::stride,::stride]
         self.windows = windows
 

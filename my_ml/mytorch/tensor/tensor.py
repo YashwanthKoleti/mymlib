@@ -125,17 +125,17 @@ class tensor:
     def reshape(self,new_shape):
         return ReshapeOp().apply(self,new_shape=new_shape)
     
-    def Con1d(self,other,padding,stride):
-        other = other if isinstance(other,tensor) else tensor(other)
-        return Conv1dOp().apply(self,other,padding,stride)
-    
-    def Con2d(self,other,padding,stride):
-        other = other if isinstance(other,tensor) else tensor(other)
-        return Conv2dOp().apply(self,other,padding,stride)
-    
-    def Con3d(self,other,padding,stride):
-        other = other if isinstance(other,tensor) else tensor(other)
-        return Conv3dOp().apply(self,other,padding,stride)
+    def Con1d(self, other, padding, stride):
+        other = other if isinstance(other, tensor) else tensor(other)
+        return Conv1dOp().apply(self, other, stride, padding)
+
+    def Con2d(self, other, padding, stride):
+        other = other if isinstance(other, tensor) else tensor(other)
+        return Conv2dOp().apply(self, other, stride, padding)
+
+    def Con3d(self, other, padding, stride):
+        other = other if isinstance(other, tensor) else tensor(other)
+        return Conv3dOp().apply(self, other, stride, padding)
     
     def Maxpool1d(self,stride,padding,kernel_size):
         return maxpool1d().apply(self, stride,padding,kernel_size)
@@ -150,22 +150,22 @@ class tensor:
         kernel = np.ones(kernel_size, dtype=np.float32)
         kernel = kernel/kernel.size
         other = tensor(kernel)
-        kernel.required_grad = False
-        return Conv1dOp().apply(self,other,padding,stride)
+        other.required_grad = False
+        return Conv1dOp().apply(self,other,stride,padding)
     
     def Avgpool2d(self,padding,stride,kernel_size):
         kernel = np.ones(kernel_size, dtype=np.float32)
         kernel = kernel/kernel.size
         other = tensor(kernel)
-        kernel.required_grad = False
-        return Conv1dOp().apply(self,other,padding,stride)
+        other.required_grad = False
+        return Conv1dOp().apply(self,other,stride,padding)
     
     def Avgpool3d(self,padding,stride,kernel_size):
         kernel = np.ones(kernel_size, dtype=np.float32)
         kernel = kernel/kernel.size
         other = tensor(kernel)
-        kernel.required_grad = False
-        return Conv1dOp().apply(self,other,padding,stride)
+        other.required_grad = False
+        return Conv1dOp().apply(self,other,stride,padding)
 
     def __repr__(self):
         def indent(value, spaces=4):
