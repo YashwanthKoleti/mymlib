@@ -1,7 +1,5 @@
 # MyMLib 
-[![Python](https://img.shields.io/badge/Python-3.8%2B-blue.svg)](https://www.python.org/)
-[![License](https://img.shields.io/badge/License-MIT-green.svg)](#license)
-[![Framework](https://img.shields.io/badge/Framework-Custom_Deep_Learning_%26_ML-orange.svg)](#mytorch-deep-learning-framework)
+
 **MyMLib** is an end-to-end, from-scratch Machine Learning and Deep Learning library written in Python and NumPy. Built primarily for educational clarity, architectural research, and deep technical understanding, **MyMLib** features a custom automatic differentiation (autograd) engine, PyTorch-like neural network modules, optimizers, and classic machine learning algorithms (Decision Trees, Random Forests, PCA, Linear Models).
 ---
 ##  Highlights
