@@ -1,6 +1,6 @@
 # MyMLib 
 
-**MyMLib** is an end-to-end, from-scratch Machine Learning and Deep Learning library written in Python and NumPy. Built primarily for educational clarity, architectural research, and deep technical understanding, **MyMLib** features a custom automatic differentiation (autograd) engine, PyTorch-like neural network modules, optimizers, and classic machine learning algorithms (Decision Trees, Random Forests, PCA, Linear Models).
+#### **MyMLib** is an end-to-end, from-scratch Machine Learning and Deep Learning library written in Python and NumPy. **MyMLib** features a custom automatic differentiation (autograd) engine, PyTorch-like neural network modules, optimizers, and classic machine learning algorithms (Decision Trees, Random Forests, PCA, Linear Models).
 ---
 ##  Highlights
 -  **`mytorch` Autograd Engine**: Dynamic reverse-mode automatic differentiation engine with DAG-based computational graph tracking.
