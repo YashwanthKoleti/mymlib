@@ -106,127 +106,16 @@ kpca = KPCA(n_components=2, kernel="rbf", gamma=15.0)
 X_kpca = kpca.fit_transform(X)
 ```
 ---
-## 🛠️ Package Modules Overview
-|
- Subpackage 
-|
- Modules / Classes 
-|
- Description 
-|
-|
----
-|
----
-|
----
-|
-|
-**
-`mytorch.nn`
-**
-|
-`Linear`
-, 
-`Con1d/2d/3d`
-, 
-`MaxPool1d/2d/3d`
-, 
-`AvgPool1d/2d/3d`
-, 
-`Flatten`
-, 
-`ReLU`
-, 
-`Sigmoid`
-, 
-`CrossEntropy`
-, 
-`MSE`
-|
- Neural network layers, activations, and loss functions 
-|
-|
-**
-`mytorch.optim`
-**
-|
-`SGD`
-, 
-`Adam`
-|
- Gradient-based parameter optimizers 
-|
-|
-**
-`mytorch.autograd`
-**
-|
-`engine`
-, 
-`node`
-, 
-`ops`
-|
- Dynamic Reverse-Mode Autograd engine & node DAG tracking 
-|
-|
-**
-`trees`
-**
-|
-`DecisionTree_Classification`
-, 
-`DecisionTree_Regression`
-, 
-`RandomForestClassification`
-, 
-`RandomForestRegression`
-|
- Tree-based models supporting Gini, Entropy, and MSE split criteria 
-|
-|
-**
-`linear_models`
-**
-|
-`LogisticRegression`
-, 
-`RidgeRegression`
-, 
-`BayesianRegression`
-|
- Classic supervised linear learning models 
-|
-|
-**
-`decomposition`
-**
-|
-`PCA`
-, 
-`KPCA`
-|
- Dimensionality reduction techniques 
-|
-|
-**
-`preprocessing`
-**
-|
-`KFold`
-, 
-`Data_split`
-|
- Data splitting and evaluation utilities 
-|
-|
-**
-`datasets`
-**
-|
-`load_spambase`
-|
- Built-in dataset loading functions 
-|
+##  Package Modules 
+
+| Subpackage | Modules / Classes | Description |
+|---|---|---|
+| **`mytorch.nn`** | `Linear`, `Con1d/2d/3d`, `MaxPool1d/2d/3d`, `AvgPool1d/2d/3d`, `Flatten`, `ReLU`, `Sigmoid`, `CrossEntropy`, `MSE` | Neural network layers, activations, and loss functions |
+| **`mytorch.optim`** | `SGD`, `Adam` | Gradient-based parameter optimizers |
+| **`mytorch.autograd`** | `engine`, `node`, `ops` | Dynamic reverse-mode autograd engine and node DAG tracking |
+| **`trees`** | `DecisionTree_Classification`, `DecisionTree_Regression`, `RandomForestClassification`, `RandomForestRegression` | Tree-based models supporting Gini, Entropy, and MSE split criteria |
+| **`linear_models`** | `LogisticRegression`, `RidgeRegression`, `BayesianRegression` | Classic supervised linear learning models |
+| **`decomposition`** | `PCA`, `KPCA` | Dimensionality reduction techniques |
+| **`preprocessing`** | `KFold`, `Data_split` | Data splitting and evaluation utilities |
+| **`datasets`** | `load_spambase` | Built-in dataset loading functions |
 ---
